@@ -8,7 +8,7 @@ from gtts import gTTS
 from playsound import playsound
 #for google image search and download
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup    #a library to parse Html
 from PIL import Image   #To open downloaded image
 s=""
 
@@ -88,20 +88,25 @@ while True:
     # Sorting based on top prediction
     prediction = sorted(prediction.items(), key=operator.itemgetter(1), reverse=True)
     
-    # Displaying the predictions
+    # Displaying the legend
     cv2.putText(frame, "Append: Space",(970,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,240), 1)
     cv2.putText(frame, "Delete: d",(970,50), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,240), 1)
     cv2.putText(frame, "Speak: s",(970,70), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,240), 1)
     cv2.putText(frame, "Images: i",(970,90), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,240), 1)
     cv2.putText(frame, "Quit: q",(970,110), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,240), 1)
+        
+    # Displaying the predictions
     cv2.putText(frame, prediction[0][0], (10, 120), cv2.FONT_HERSHEY_PLAIN, 4, (255,255,0), 2)  
     if c>0:
         cv2.putText(frame,s,(pix,350),cv2.FONT_HERSHEY_PLAIN, 2.5, (0,0,0), 2)
     cv2.imshow("Frame", frame)
     
     interrupt = cv2.waitKey(10)
+    
     if interrupt & 0xFF == 27: # esc key
         break
+
+    #Append Key
     if interrupt & 0xFF in (13,ord(' ')): #enter key or space
         if prediction[0][0] == 'ZERO':
             s+=" "
@@ -111,26 +116,32 @@ while True:
             c+=1 
             s+=prediction[0][0]
             pix+=4
+
+    #Delete key
     if interrupt & 0xFF == ord('d'):
         s=s[:-1]       #to delete the string by character
+        
+    #Speak Key
     if interrupt & 0xFF == ord('s'):
-        # The text that you want to convert to audio
+        
         # Language in which you want to convert
         language = 'en'
 
-        # Passing the text and language to the engine, 
-        # here we have marked slow=False. Which tells 
-        # the module that the converted audio should 
-        # have a high speed
+        # Passing the text and language to the engine
         myobj = gTTS(text=s, lang=language, slow=False)
         # Saving the converted audio in a mp3 file named
         # welcome 
         myobj.save("speech1.mp3")
         os.system("afplay speech1.mp3")
-        
+       
+    
+    
     if interrupt & 0xFF == ord('i'):
+        #google images url
         Google_Image = \
         'https://www.google.com/search?site=&tbm=isch&source=hp&biw=1873&bih=990&'
+        
+        #Request Header needed for google ---> info about which OS we are using ad its versions
         usr_agent = {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
                         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -142,20 +153,28 @@ while True:
         save_folder = 'images'
         if not os.path.exists(save_folder):
             os.mkdir(save_folder)
-
+        
+        #data is the string (appended letter by letter after prediction)
         data = s
-
+        
+        #we only need the first image of the google image search
         num_images = 1
-
+        
+        #Adding our String(data) to the Google images URL
         search_url = Google_Image + 'q=' + data
-
+        
+        #request the html script of the google image search result
         response = requests.get(search_url, headers=usr_agent)
         html = response.text
-
+           
+        #BuestifulSoup is a html Parser
         b_soup = BeautifulSoup(html, 'html.parser')
+        
+        #the images are inside the class= rg_i Q4LuWd in html script
         results = b_soup.findAll('img', {'class': 'rg_i Q4LuWd'})
         count = 0
 
+        #Saving the image to our Directory images
         imagelinks= []
         for res in results:
             try:
@@ -179,7 +198,7 @@ while True:
   
         # This method will show image in any image viewer 
         im.show()
-        print('[+] Download Successfully')
+        print('Image Download Successful')
 
 
 cap.release()        
