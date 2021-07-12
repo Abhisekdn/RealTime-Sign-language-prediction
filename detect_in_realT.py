@@ -13,7 +13,7 @@ from PIL import Image   #To open downloaded image
 s=""
 
 
-# Loading the model
+# Loading the model(27 classes)
 
 json_file = open("Models/model-e12-abhi-data(old).json", "r")
 model_json = json_file.read()
@@ -21,7 +21,45 @@ json_file.close()
 loaded_model = model_from_json(model_json)
 # load weights into new model
 loaded_model.load_weights("Models/model-e12-abhi-data(old).h5")
-print("Loaded model from disk")
+
+#loading the model_dru
+json_file_dru = open("Models/model-e12data-dru.json","r")
+model_json_dru = json_file_dru.read()
+json_file_dru.close()
+loaded_model_dru = model_from_json(model_json_dru)
+loaded_model_dru.load_weights("Models/model-e12data-dru.h5")
+
+#loading the model_ktr
+json_file_ktr = open("Models/model-e12data-ktr.json","r")
+model_json_ktr = json_file_ktr.read()
+json_file_ktr.close()
+loaded_model_ktr = model_from_json(model_json_ktr)
+loaded_model_ktr.load_weights("Models/model-e12data-ktr.h5")
+
+#loading the model_se
+json_file_se = open("Models/model-e12data-se.json","r")
+model_json_se = json_file_se.read()
+json_file_se.close()
+loaded_model_se = model_from_json(model_json_se)
+loaded_model_se.load_weights("Models/model-e12data-se.h5")
+
+#loading the model_smnt
+json_file_smnt = open("Models/model-e12data-smnt.json","r")
+model_json_smnt = json_file_smnt.read()
+json_file_smnt.close()
+loaded_model_smnt = model_from_json(model_json_smnt)
+loaded_model_smnt.load_weights("Models/model-e12data-smnt.h5")
+
+#loading the model_ij
+# json_file_ij = open("Models/model-e12data-ij.json","r")
+# model_json_ij = json_file_ij.read()
+# json_file_ij.close()
+# loaded_model_ij = model_from_json(model_json_ij)
+# loaded_model_ij.load_weights("Models/model-e12data-ij.h5")
+
+
+
+print("Loaded all models from disk")
 
 cap = cv2.VideoCapture(0)
 pix =10
@@ -56,7 +94,16 @@ while True:
     _, test_image = cv2.threshold(th3, 70, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
     cv2.imshow("test", test_image)
     # Batch of 1
-    result = loaded_model.predict(test_image.reshape(1, 128, 128, 1))   #sending the ROI Frame to the model to predict
+    #results of all models loaded 
+    #sending the ROI Frame to the models to predict
+
+    result = loaded_model.predict(test_image.reshape(1, 128, 128, 1))  
+    result_dru = loaded_model_dru.predict(test_image.reshape(1, 128, 128, 1))
+    result_se = loaded_model_se.predict(test_image.reshape(1, 128, 128, 1))
+    result_ktr = loaded_model_ktr.predict(test_image.reshape(1, 128, 128, 1))
+    result_smnt = loaded_model_smnt.predict(test_image.reshape(1, 128, 128, 1))
+#     result_ij = loaded_model_ij.predict(test_image.reshape(1, 128, 128, 1))
+    
     prediction = {'ZERO': result[0][0], 
                   'a': result[0][1], 
                   'b': result[0][2],
@@ -87,6 +134,49 @@ while True:
                   }
     # Sorting based on top prediction
     prediction = sorted(prediction.items(), key=operator.itemgetter(1), reverse=True)
+    current_sym = prediction[0][0]
+    
+   
+    #Addressing letters with similar gestures
+    if (current_sym == 'd' or current_sym == 'r' or current_sym == 'u'):
+        prediction1 = {}
+        prediction1['d'] = result_dru[0][0]
+        prediction1['r'] = result_dru[0][1]
+        prediction1['u'] = result_dru[0][2]
+        prediction1 = sorted(prediction1.items(), key=operator.itemgetter(1), reverse=True)
+        current_sym = prediction1[0][0]
+    
+    if (current_sym == 'k' or current_sym == 't' or current_sym == 'r'):
+        prediction2 = {}
+        prediction2['k'] = result_ktr[0][0]
+        prediction2['r'] = result_ktr[0][1]
+        prediction2['t'] = result_ktr[0][2]
+        prediction2 = sorted(prediction2.items(), key=operator.itemgetter(1), reverse=True)
+        current_sym = prediction2[0][0]
+        
+    if (current_sym == 's' or current_sym == 'e'):
+        prediction2 = {}
+        prediction2['e'] = result_se[0][0]
+        prediction2['s'] = result_se[0][1]
+        prediction2 = sorted(prediction2.items(), key=operator.itemgetter(1), reverse=True)
+        current_sym = prediction2[0][0]
+        
+    if (current_sym == 'm' or current_sym == 'm' or current_sym == 'n' or current_sym == 't'):
+        prediction2 = {}
+        prediction2['m'] = result_smnt[0][0]
+        prediction2['n'] = result_smnt[0][1]
+        prediction2['s'] = result_smnt[0][2]
+        prediction2['t'] = result_smnt[0][3]
+        prediction2 = sorted(prediction2.items(), key=operator.itemgetter(1), reverse=True)
+        current_sym = prediction2[0][0]
+    
+#     if (current_sym == 'i' or current_sym == 'j'):
+#         prediction2 = {}
+#         prediction2['i'] = result_smnt[0][0]
+#         prediction2['j'] = result_smnt[0][1]
+#         prediction2 = sorted(prediction2.items(), key=operator.itemgetter(1), reverse=True)
+#         current_sym = prediction2[0][0]
+
     
     # Displaying the legend
     cv2.putText(frame, "Append: Space",(970,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,240), 1)
@@ -96,7 +186,7 @@ while True:
     cv2.putText(frame, "Quit: q",(970,110), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,240), 1)
         
     # Displaying the predictions
-    cv2.putText(frame, prediction[0][0], (10, 120), cv2.FONT_HERSHEY_PLAIN, 4, (255,255,0), 2)  
+    cv2.putText(frame, current_sym, (10, 120), cv2.FONT_HERSHEY_PLAIN, 4, (255,255,0), 2)  
     if c>0:
         cv2.putText(frame,s,(pix,350),cv2.FONT_HERSHEY_PLAIN, 2.5, (0,0,0), 2)
     cv2.imshow("Frame", frame)
@@ -108,13 +198,13 @@ while True:
 
     #Append Key
     if interrupt & 0xFF in (13,ord(' ')): #enter key or space
-        if prediction[0][0] == 'ZERO':
+        if current_sym == 'ZERO':
             s+=" "
             c+=1
             pix+=4
         else:
             c+=1 
-            s+=prediction[0][0]
+            s+=current_sym
             pix+=4
 
     #Delete key
